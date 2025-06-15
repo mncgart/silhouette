@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "workflow": {
+    "1": {"class_type": "LoadImage", "inputs": {"image": "path/to/your/input_image.png"}},
+    "2": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "sd-video-model.ckpt"}},
+    "3": {"class_type": "VAEEncode", "inputs": {"pixels": ["1", 0]}},
+    "4": {"class_type": "KSampler", "inputs": {"model": ["2", 0], "latent": ["3", 0], "steps": 30}},
+    "5": {"class_type": "Decode", "inputs": {"samples": ["4", 0]}},
+    "6": {"class_type": "VideoCombine", "inputs": {"frames": ["5", 0], "fps": 24, "filename": "output_video.mp4"}}
+  }
+}
