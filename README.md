@@ -21,6 +21,12 @@ Use the installer script:
 bash scripts/one_click_4090.sh
 ```
 
+Windows alternative:
+
+```powershell
+.\one_click_4090.ps1
+```
+
 Useful flags:
 
 ```bash
@@ -51,12 +57,16 @@ What it does:
 ## Files to download
 If you only want the installer package, download these files:
 - `scripts/one_click_4090.sh`
+- `scripts/one_click_4090.ps1`
+- `scripts/build_download_bundle.ps1`
+- `one_click_4090.ps1`
+- `build_download_bundle.ps1`
+- `one_click_4090.bat`
+- `build_download_bundle.bat`
 - `config/models.4090.yaml`
 - `docs/model_recommendations.md`
 - `requirements/base.txt`
 - `requirements/cuda121.txt`
-- `scripts/one_click_4090.ps1`
-- `scripts/build_download_bundle.ps1`
 
 Or build one zip bundle from this repo:
 
@@ -72,11 +82,18 @@ This creates:
 If you are in `PS C:\...` and saw errors like:
 - `Unexpected token ')'`
 - `'✅' is not recognized as a cmdlet`
+- `...one_click_4090.ps1 is not recognized...`
 
 Use these exact commands in PowerShell (without emoji):
 
 ```powershell
-# run installer
+# 1) confirm you are in the repo root
+Get-Location
+
+# 2) confirm files exist
+Get-ChildItem .\scripts
+
+# 3) run installer (script path inside scripts/)
 .\scripts\one_click_4090.ps1
 
 # optional flags
@@ -86,6 +103,22 @@ Use these exact commands in PowerShell (without emoji):
 # build downloadable zip
 .\scripts\build_download_bundle.ps1
 ```
+
+Alternative (new root launchers):
+
+```powershell
+.\one_click_4090.ps1
+.\build_download_bundle.ps1
+```
+
+or double-click / run:
+
+```powershell
+.\one_click_4090.bat
+.\build_download_bundle.bat
+```
+
+If `Get-ChildItem .\scripts` does not show `.ps1` files, you downloaded an older or incomplete copy. Re-download the full repo ZIP from GitHub **Code → Download ZIP**.
 
 > Important: `✅` is only a status symbol in docs, not part of a shell command.
 
@@ -101,6 +134,12 @@ Use these exact commands in PowerShell (without emoji):
 
 ```bash
 bash scripts/one_click_4090.sh
+```
+
+Windows alternative:
+
+```powershell
+.\one_click_4090.ps1
 ```
 
 ### Method B — Clone with Git (recommended)
@@ -123,6 +162,12 @@ cd silhouette
 bash scripts/one_click_4090.sh
 ```
 
+Windows alternative (from repo root):
+
+```powershell
+.\one_click_4090.ps1
+```
+
 ### Method C — Download only the installer bundle file
 If `dist/ai-studio-4090-bundle.zip` is already provided in your release/artifacts:
 1. Download `ai-studio-4090-bundle.zip`.
@@ -132,4 +177,10 @@ If `dist/ai-studio-4090-bundle.zip` is already provided in your release/artifact
 
 ```bash
 bash scripts/one_click_4090.sh
+```
+
+Windows alternative:
+
+```powershell
+.\one_click_4090.ps1
 ```

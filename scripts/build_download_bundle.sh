@@ -40,6 +40,10 @@ cp "${ROOT_DIR}/scripts/one_click_4090.ps1" "${BUNDLE_DIR}/scripts/one_click_409
 cp "${ROOT_DIR}/scripts/build_download_bundle.ps1" "${BUNDLE_DIR}/scripts/build_download_bundle.ps1"
 cp "${ROOT_DIR}/requirements/base.txt" "${BUNDLE_DIR}/requirements/base.txt"
 cp "${ROOT_DIR}/requirements/cuda121.txt" "${BUNDLE_DIR}/requirements/cuda121.txt"
+cp "${ROOT_DIR}/one_click_4090.ps1" "${BUNDLE_DIR}/one_click_4090.ps1"
+cp "${ROOT_DIR}/build_download_bundle.ps1" "${BUNDLE_DIR}/build_download_bundle.ps1"
+cp "${ROOT_DIR}/one_click_4090.bat" "${BUNDLE_DIR}/one_click_4090.bat"
+cp "${ROOT_DIR}/build_download_bundle.bat" "${BUNDLE_DIR}/build_download_bundle.bat"
 
 cat > "${BUNDLE_DIR}/DOWNLOAD_FIRST.md" <<'MSG'
 # Download Package: AI Studio 4090 (No ComfyUI)
@@ -62,6 +66,10 @@ bash one_click_4090.sh
 - `scripts/one_click_4090.sh`
 - `scripts/one_click_4090.ps1`
 - `scripts/build_download_bundle.ps1`
+- `one_click_4090.ps1`
+- `build_download_bundle.ps1`
+- `one_click_4090.bat`
+- `build_download_bundle.bat`
 MSG
 
 (
