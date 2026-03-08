@@ -36,6 +36,8 @@ cp "${ROOT_DIR}/config/models.4090.yaml" "${BUNDLE_DIR}/config/models.4090.yaml"
 cp "${ROOT_DIR}/docs/model_recommendations.md" "${BUNDLE_DIR}/docs/model_recommendations.md"
 cp "${ROOT_DIR}/docs/upgrade_blueprint.md" "${BUNDLE_DIR}/docs/upgrade_blueprint.md"
 cp "${ROOT_DIR}/scripts/one_click_4090.sh" "${BUNDLE_DIR}/scripts/one_click_4090.sh"
+cp "${ROOT_DIR}/scripts/one_click_4090.ps1" "${BUNDLE_DIR}/scripts/one_click_4090.ps1"
+cp "${ROOT_DIR}/scripts/build_download_bundle.ps1" "${BUNDLE_DIR}/scripts/build_download_bundle.ps1"
 cp "${ROOT_DIR}/requirements/base.txt" "${BUNDLE_DIR}/requirements/base.txt"
 cp "${ROOT_DIR}/requirements/cuda121.txt" "${BUNDLE_DIR}/requirements/cuda121.txt"
 
@@ -58,6 +60,8 @@ bash one_click_4090.sh
 - `requirements/base.txt`
 - `requirements/cuda121.txt`
 - `scripts/one_click_4090.sh`
+- `scripts/one_click_4090.ps1`
+- `scripts/build_download_bundle.ps1`
 MSG
 
 (

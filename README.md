@@ -55,6 +55,8 @@ If you only want the installer package, download these files:
 - `docs/model_recommendations.md`
 - `requirements/base.txt`
 - `requirements/cuda121.txt`
+- `scripts/one_click_4090.ps1`
+- `scripts/build_download_bundle.ps1`
 
 Or build one zip bundle from this repo:
 
@@ -64,6 +66,28 @@ bash scripts/build_download_bundle.sh
 
 This creates:
 - `dist/ai-studio-4090-bundle.zip`
+
+
+## Windows PowerShell quick fix (for your errors)
+If you are in `PS C:\...` and saw errors like:
+- `Unexpected token ')'`
+- `'✅' is not recognized as a cmdlet`
+
+Use these exact commands in PowerShell (without emoji):
+
+```powershell
+# run installer
+.\scripts\one_click_4090.ps1
+
+# optional flags
+.\scripts\one_click_4090.ps1 -SkipSystem -SkipOptional
+.\scripts\one_click_4090.ps1 -DryRun
+
+# build downloadable zip
+.\scripts\build_download_bundle.ps1
+```
+
+> Important: `✅` is only a status symbol in docs, not part of a shell command.
 
 ## Download on your laptop (step by step)
 
