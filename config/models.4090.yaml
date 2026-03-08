@@ -1,0 +1,36 @@
+profile: laptop_rtx4090_16gb
+notes:
+  - Prefer bf16/fp16 + attention slicing for image/video.
+  - Keep batch sizes at 1 for reliability.
+  - Use 720p or lower for first-pass video generation.
+
+llm:
+  primary: qwen2.5:7b-instruct
+  optional:
+    - qwen2.5:14b-instruct-q4_K_M
+
+image:
+  fast_iteration: black-forest-labs/FLUX.1-schnell
+  quality_pass: black-forest-labs/FLUX.1-dev
+  defaults:
+    width: 1024
+    height: 1024
+    steps: 20
+    guidance_scale: 3.5
+
+video:
+  primary: LTX-Video
+  optional_heavy: Wan-2.2
+  defaults:
+    width: 1280
+    height: 720
+    frames: 81
+    fps: 24
+
+tts:
+  primary: piper
+  optional_quality: xtts
+
+music:
+  primary: musicgen-small
+  optional: musicgen-medium
