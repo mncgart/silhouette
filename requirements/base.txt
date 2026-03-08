@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+gradio
+pydantic
+redis
+moviepy
+
+# Model runtimes
+diffusers
+transformers
+accelerate
+xformers
+bitsandbytes

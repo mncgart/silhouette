@@ -21,23 +21,40 @@ Use the installer script:
 bash scripts/one_click_4090.sh
 ```
 
+Useful flags:
+
+```bash
+# Skip apt installs (if dependencies are already installed)
+bash scripts/one_click_4090.sh --skip-system
+
+# Skip optional ollama/piper install
+bash scripts/one_click_4090.sh --skip-optional
+
+# Dry run (shows planned commands)
+bash scripts/one_click_4090.sh --dry-run
+```
+
 What it does:
-1. Installs OS packages (`python3-venv`, `ffmpeg`, `git`, `curl`, etc.)
-2. Creates `.venv`
-3. Installs PyTorch + core inference libraries
-4. Installs optional local services (`ollama`, `piper`)
-5. Writes a local model profile at `config/models.4090.yaml`
+1. Validates minimum requirements (`python3`, optional GPU check with `nvidia-smi`)
+2. Installs OS packages (`python3-venv`, `ffmpeg`, `git`, `curl`, etc.) when supported
+3. Creates virtual environment
+4. Installs PyTorch + core inference libraries from requirements files
+5. Optionally installs local services (`ollama`, `piper`)
 
 ## Files
 - `scripts/one_click_4090.sh`: one-click local setup script
 - `config/models.4090.yaml`: conservative model presets for 16 GB VRAM
 - `docs/model_recommendations.md`: quality/speed recommendations and fallback matrix
+- `docs/upgrade_blueprint.md`: practical roadmap to make your studio stronger
+- `requirements/base.txt` and `requirements/cuda121.txt`: reproducible dependency lists
 
 ## Files to download
 If you only want the installer package, download these files:
 - `scripts/one_click_4090.sh`
 - `config/models.4090.yaml`
 - `docs/model_recommendations.md`
+- `requirements/base.txt`
+- `requirements/cuda121.txt`
 
 Or build one zip bundle from this repo:
 

@@ -46,3 +46,12 @@ Use a service approach:
 - unified project metadata (SQLite/Postgres)
 
 This keeps it modular and easier to maintain than manual node graph editing.
+
+## Studio quality improvements (beyond model choice)
+If you want this to outperform typical local AI studio setups, focus on:
+- timeline-first UX (all generations become editable shots)
+- consistency memory (character/style locks across scenes)
+- benchmarked presets (eco/balanced/quality) with measured latency and fail rate
+- reproducible runs (prompt+seed+model metadata on every artifact)
+
+See `docs/upgrade_blueprint.md` for a concrete implementation roadmap.
