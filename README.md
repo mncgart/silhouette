@@ -66,6 +66,45 @@ Use native Windows only if you specifically need:
 
 > Note: this repo currently uses image+audio composition for stability on laptop hardware. You can plug Wan/LTX generation as a next module when you want full text-to-video generation directly.
 
+## How to download these files to your laptop
+
+### Option A (recommended): clone with Git
+
+In Windows PowerShell or WSL terminal:
+
+```bash
+git clone <YOUR_REPO_URL>
+cd silhouette
+```
+
+If you already have the repo and want latest updates:
+
+```bash
+cd silhouette
+git pull
+```
+
+### Option B: download ZIP from GitHub
+
+1. Open your repo page in browser.
+2. Click **Code** → **Download ZIP**.
+3. Extract ZIP to a folder (for example `C:\Users\<you>\Projects\silhouette`).
+4. Open terminal in that folder.
+
+### Run from WSL2 (best for this project)
+
+If the project is on Windows drive, from WSL you can enter it like:
+
+```bash
+cd /mnt/c/Users/<you>/Projects/silhouette
+```
+
+Then run setup:
+
+```bash
+bash setup_wsl.sh
+```
+
 ## One-command WSL2 setup
 
 You can bootstrap everything with:
