@@ -1,175 +1,98 @@
-# Silhouette: Local Open-Source AI Video Agent (Updated Models)
+# Silhouette Pro: Local AI Video Agent (RTX 4090 Laptop)
 
-Got it — you asked for newer model options like **Wan2.2 / LTX** plus better audio/music/image quality on your HP Omen RTX 4090 (16GB VRAM, 32GB RAM).
+Yes — now it includes a **professional UI** and supports a **best-available model workflow**:
+- Better image defaults (`FLUX.1-dev` quality preset)
+- Optional image-to-video integration for **WAN 2.2** / **LTX** via command hooks
+- XTTS v2 voice + optional MusicGen soundtrack
 
-This update keeps everything local/open-source and adds:
-- newer default image + voice presets
-- optional AI background music generation
-- explicit references to current dedicated video models (Wan2.2, LTX)
+## What you get
 
-## What this pipeline does now
+- `app.py` — CLI pipeline
+- `ui.py` — professional Gradio UI
+- `setup_wsl.sh` — one-command WSL2 setup
 
-1. Writes scene script with an open-source LLM.
-2. Generates scene visuals (high-quality image generation).
-3. Generates narration (XTTS v2, optional voice-clone sample).
-4. Optionally generates background music (MusicGen).
-5. Composes a captioned MP4.
+## Best setup on your laptop
 
-## Best setup: Windows vs WSL2 Linux
+For HP Omen RTX 4090 16GB + 32GB RAM: use **Windows 11 + WSL2 Ubuntu**.
 
-Short answer: **WSL2 Ubuntu is usually the best setup for this stack** on your laptop.
+```bash
+bash setup_wsl.sh
+```
 
-### Recommendation
-- **Best overall**: **Windows 11 + WSL2 (Ubuntu 22.04/24.04)**
-- **Why**:
-  - Python AI ecosystem is smoother on Linux environments (fewer package issues).
-  - Better compatibility with open-source tooling around diffusers/TTS/video pipelines.
-  - Easier shell scripting and dependency management.
+## Run Professional UI
 
-### When to use native Windows
-Use native Windows only if you specifically need:
-- direct integration with Windows-only apps/plugins
-- a GUI-only workflow and no terminal comfort
+```bash
+source .venv/bin/activate
+python ui.py
+```
 
-### Practical setup checklist (recommended)
-1. Install latest NVIDIA Game Ready/Studio driver on Windows host.
-2. Install WSL2 + Ubuntu.
-3. In Ubuntu, create venv and install requirements.
-4. Install FFmpeg inside WSL2:
-   ```bash
-   sudo apt update && sudo apt install -y ffmpeg
-   ```
-5. Validate CUDA visibility from WSL2:
-   ```bash
-   nvidia-smi
-   ```
-6. Run with `--preset fast-4090` first, then upgrade to `quality-4090`.
+Open:
+- `http://localhost:7860`
 
-## Default presets (for RTX 4090 laptop)
+## Run CLI
 
-### `fast-4090` (default)
-- Script: `Qwen/Qwen2.5-7B-Instruct`
-- Image: `black-forest-labs/FLUX.1-schnell`
-- Voice: `tts_models/multilingual/multi-dataset/xtts_v2`
-- Music: `facebook/musicgen-small`
+```bash
+python app.py "AI product ad for students" --preset quality-4090
+```
 
-### `quality-4090`
-- Script: `Qwen/Qwen2.5-7B-Instruct`
-- Image: `stabilityai/stable-diffusion-xl-base-1.0`
-- Voice: `tts_models/multilingual/multi-dataset/xtts_v2`
-- Music: `facebook/musicgen-medium`
+## Model strategy (best now)
 
-## Dedicated video model references (for next upgrade path)
+### Presets
+- `fast-4090`
+  - Image: `black-forest-labs/FLUX.1-schnell`
+  - I2V: disabled (`none`)
+- `quality-4090` (recommended)
+  - Image: `black-forest-labs/FLUX.1-dev`
+  - I2V backend default: `wan22`
+  - I2V model default: `Wan-AI/Wan2.2-I2V-A14B`
 
-- Wan2.2: `Wan-AI/Wan2.2-T2V-A14B`
+### Latest I2V references
+- WAN 2.2: `Wan-AI/Wan2.2-I2V-A14B`
 - LTX: `Lightricks/LTX-Video`
 
-> Note: this repo currently uses image+audio composition for stability on laptop hardware. You can plug Wan/LTX generation as a next module when you want full text-to-video generation directly.
+## Important: WAN/LTX integration
 
-## How to download these files to your laptop
+WAN/LTX image-to-video is wired through an external command template so you can connect your preferred runner (ComfyUI, custom script, etc.).
 
-### Option A (recommended): clone with Git
+`--i2v-command` supports placeholders:
+- `{input}` scene image path
+- `{output}` scene video output path
+- `{prompt}` scene prompt
+- `{model}` selected model id
+- `{backend}` selected backend (`wan22` or `ltx`)
 
-In Windows PowerShell or WSL terminal:
+Example:
 
+```bash
+python app.py "Smart home ad" \
+  --preset quality-4090 \
+  --i2v-backend wan22 \
+  --i2v-model Wan-AI/Wan2.2-I2V-A14B \
+  --i2v-command 'python tools/run_i2v.py --backend {backend} --model {model} --input {input} --output {output} --prompt "{prompt}"'
+```
+
+## Download files to your laptop
+
+### Option A (recommended): git clone
 ```bash
 git clone <YOUR_REPO_URL>
 cd silhouette
 ```
 
-If you already have the repo and want latest updates:
+### Option B: Download ZIP
+- GitHub → **Code** → **Download ZIP**
+- Extract and open terminal in extracted folder
+
+## VRAM tips
+
+- Start with `--scenes 3`
+- Use `1280x720` or `1024x576`
+- Close heavy GPU apps before running
+
+## Requirements
+
+Install Python dependencies:
 
 ```bash
-cd silhouette
-git pull
-```
-
-### Option B: download ZIP from GitHub
-
-1. Open your repo page in browser.
-2. Click **Code** → **Download ZIP**.
-3. Extract ZIP to a folder (for example `C:\Users\<you>\Projects\silhouette`).
-4. Open terminal in that folder.
-
-### Run from WSL2 (best for this project)
-
-If the project is on Windows drive, from WSL you can enter it like:
-
-```bash
-cd /mnt/c/Users/<you>/Projects/silhouette
-```
-
-Then run setup:
-
-```bash
-bash setup_wsl.sh
-```
-
-## One-command WSL2 setup
-
-You can bootstrap everything with:
-
-```bash
-bash setup_wsl.sh
-```
-
-This script installs Ubuntu dependencies, creates `.venv`, installs `requirements.txt`, and verifies GPU visibility (`nvidia-smi`) when available.
-
-## Install
-
-```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows PowerShell: .venv\Scripts\Activate.ps1
-pip install --upgrade pip
 pip install -r requirements.txt
 ```
-
-## Run
-
-```bash
-python app.py "AI fitness app for busy professionals" --preset fast-4090
-```
-
-Quality mode:
-
-```bash
-python app.py "AI fitness app for busy professionals" --preset quality-4090
-```
-
-Disable background music:
-
-```bash
-python app.py "AI fitness app for busy professionals" --no-music
-```
-
-Use your own reference voice sample (XTTS voice clone):
-
-```bash
-python app.py "AI fitness app for busy professionals" --speaker-wav ./voice_ref.wav
-```
-
-Outputs:
-
-```text
-outputs/<topic-slug>/
-  scenes.json
-  images/
-  audio/
-  music/background.wav
-  video/final.mp4
-```
-
-## VRAM tips for your laptop
-
-If you get CUDA OOM:
-- Lower resolution: `--width 1024 --height 576`
-- Reduce scenes: `--scenes 3`
-- Use `--preset fast-4090`
-- Close Chrome/games/other GPU-heavy apps
-
-## Why this is better for your request
-
-- Uses stronger modern image generation defaults.
-- Uses stronger modern voice model (XTTS v2).
-- Adds music generation so final output feels closer to ad tools.
-- Keeps explicit Wan2.2 / LTX model path for future true video-model rendering.

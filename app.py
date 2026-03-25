@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import textwrap
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,18 +20,22 @@ MODEL_PRESETS = {
         "image_model": "black-forest-labs/FLUX.1-schnell",
         "tts_model": "tts_models/multilingual/multi-dataset/xtts_v2",
         "music_model": "facebook/musicgen-small",
+        "i2v_backend": "none",
+        "i2v_model": "",
     },
     "quality-4090": {
         "script_model": "Qwen/Qwen2.5-7B-Instruct",
-        "image_model": "stabilityai/stable-diffusion-xl-base-1.0",
+        "image_model": "black-forest-labs/FLUX.1-dev",
         "tts_model": "tts_models/multilingual/multi-dataset/xtts_v2",
         "music_model": "facebook/musicgen-medium",
+        "i2v_backend": "wan22",
+        "i2v_model": "Wan-AI/Wan2.2-I2V-A14B",
     },
 }
 
 LATEST_VIDEO_REFERENCES = {
-    "wan22": "Wan-AI/Wan2.2-T2V-A14B",
-    "ltx": "Lightricks/LTX-Video",
+    "wan22_i2v": "Wan-AI/Wan2.2-I2V-A14B",
+    "ltx_i2v": "Lightricks/LTX-Video",
 }
 
 
@@ -51,6 +56,7 @@ def ensure_dirs(out_dir: Path) -> dict[str, Path]:
     paths = {
         "root": out_dir,
         "images": out_dir / "images",
+        "scene_videos": out_dir / "scene_videos",
         "audio": out_dir / "audio",
         "music": out_dir / "music",
         "video": out_dir / "video",
@@ -99,7 +105,7 @@ def generate_scene_images(scenes: List[Scene], out_dir: Path, image_model_id: st
     image_paths: List[Path] = []
 
     for i, scene in enumerate(scenes, start=1):
-        result = pipe(prompt=scene.visual_prompt, width=width, height=height, guidance_scale=4.0, num_inference_steps=20)
+        result = pipe(prompt=scene.visual_prompt, width=width, height=height, guidance_scale=4.0, num_inference_steps=22)
         img: Image.Image = result.images[0]
         img_path = out_dir / f"scene_{i:02d}.png"
         img.save(img_path)
@@ -107,6 +113,40 @@ def generate_scene_images(scenes: List[Scene], out_dir: Path, image_model_id: st
         print(f"[green]Generated image[/green] {img_path.name}")
 
     return image_paths
+
+
+def generate_scene_videos(
+    scenes: List[Scene],
+    image_paths: List[Path],
+    out_dir: Path,
+    i2v_backend: str,
+    i2v_model: str,
+    i2v_command: Optional[str],
+) -> List[Path]:
+    """Generate short scene videos from images using external WAN/LTX command hooks."""
+    if i2v_backend == "none":
+        return []
+
+    if not i2v_command:
+        raise ValueError("i2v backend selected but --i2v-command is not provided")
+
+    scene_videos: List[Path] = []
+    for i, (scene, image_path) in enumerate(zip(scenes, image_paths), start=1):
+        out_path = out_dir / f"scene_{i:02d}.mp4"
+        cmd = i2v_command.format(
+            input=image_path,
+            output=out_path,
+            prompt=scene.visual_prompt.replace('"', "'"),
+            model=i2v_model,
+            backend=i2v_backend,
+        )
+        print(f"[cyan]I2V command[/cyan]: {cmd}")
+        completed = subprocess.run(cmd, shell=True)
+        if completed.returncode != 0 or not out_path.exists():
+            raise RuntimeError(f"I2V generation failed for scene {i}. Check command/output path.")
+        scene_videos.append(out_path)
+
+    return scene_videos
 
 
 def synthesize_voiceovers(scenes: List[Scene], out_dir: Path, tts_model_id: str, speaker_wav: Optional[Path] = None) -> List[Path]:
@@ -123,7 +163,6 @@ def synthesize_voiceovers(scenes: List[Scene], out_dir: Path, tts_model_id: str,
             kwargs["language"] = "en"
         tts.tts_to_file(**kwargs)
         audio_paths.append(wav_path)
-        print(f"[green]Generated voiceover[/green] {wav_path.name}")
 
     return audio_paths
 
@@ -133,7 +172,7 @@ def synthesize_music(prompt: str, out_path: Path, model_id: str, duration_sec: i
         import scipy.io.wavfile as wavfile
         from transformers import AutoProcessor, MusicgenForConditionalGeneration
     except Exception:
-        print("[yellow]Music generation dependencies unavailable, skipping music track.[/yellow]")
+        print("[yellow]Music dependencies missing, skipping music track.[/yellow]")
         return None
 
     processor = AutoProcessor.from_pretrained(model_id)
@@ -143,10 +182,8 @@ def synthesize_music(prompt: str, out_path: Path, model_id: str, duration_sec: i
     sampling_rate = model.config.audio_encoder.sampling_rate
     max_tokens = max(64, int(duration_sec * 50))
     audio_values = model.generate(**inputs, max_new_tokens=max_tokens)
-    audio = audio_values[0, 0].detach().cpu().numpy()
-    audio = (audio * 32767).astype("int16")
+    audio = (audio_values[0, 0].detach().cpu().numpy() * 32767).astype("int16")
     wavfile.write(out_path, rate=sampling_rate, data=audio)
-    print(f"[green]Generated music[/green] {out_path.name}")
     return out_path
 
 
@@ -166,8 +203,16 @@ def add_caption(image: Image.Image, caption: str) -> Image.Image:
     return out.convert("RGB")
 
 
-def compose_video(image_paths: List[Path], audio_paths: List[Path], scenes: List[Scene], out_path: Path, music_path: Optional[Path], fps: int = 24) -> Path:
-    from moviepy.editor import AudioFileClip, CompositeAudioClip, ImageClip, concatenate_videoclips
+def compose_video(
+    image_paths: List[Path],
+    audio_paths: List[Path],
+    scenes: List[Scene],
+    out_path: Path,
+    music_path: Optional[Path],
+    scene_video_paths: Optional[List[Path]] = None,
+    fps: int = 24,
+) -> Path:
+    from moviepy.editor import AudioFileClip, CompositeAudioClip, ImageClip, VideoFileClip, concatenate_videoclips
 
     clips = []
     temp_frames = out_path.parent / "caption_frames"
@@ -175,11 +220,14 @@ def compose_video(image_paths: List[Path], audio_paths: List[Path], scenes: List
 
     for i, (img_path, audio_path, scene) in enumerate(zip(image_paths, audio_paths, scenes), start=1):
         narration = AudioFileClip(str(audio_path))
-        frame = add_caption(Image.open(img_path), scene.voiceover)
-        captioned_path = temp_frames / f"scene_{i:02d}.png"
-        frame.save(captioned_path)
 
-        clip = ImageClip(str(captioned_path)).set_duration(narration.duration).fadein(0.2).fadeout(0.2)
+        if scene_video_paths and len(scene_video_paths) >= i:
+            clip = VideoFileClip(str(scene_video_paths[i - 1])).subclip(0, narration.duration)
+        else:
+            frame = add_caption(Image.open(img_path), scene.voiceover)
+            captioned_path = temp_frames / f"scene_{i:02d}.png"
+            frame.save(captioned_path)
+            clip = ImageClip(str(captioned_path)).set_duration(narration.duration).fadein(0.2).fadeout(0.2)
 
         if music_path and music_path.exists():
             bg = AudioFileClip(str(music_path)).volumex(0.15).subclip(0, narration.duration)
@@ -194,21 +242,30 @@ def compose_video(image_paths: List[Path], audio_paths: List[Path], scenes: List
     return out_path
 
 
-def build_video(topic: str, out_root: Path, n_scenes: int, width: int, height: int, script_model: str, image_model: str, tts_model: str, music_model: str, music_prompt: Optional[str], speaker_wav: Optional[Path]) -> Path:
-    project_dir = out_root / slugify(topic)
+def build_video(args: argparse.Namespace) -> Path:
+    project_dir = args.out / slugify(args.topic)
     paths = ensure_dirs(project_dir)
 
-    scenes = load_script_with_llm(topic, n_scenes=n_scenes, model_id=script_model)
+    scenes = load_script_with_llm(args.topic, n_scenes=args.scenes, model_id=args.script_model)
     with open(paths["root"] / "scenes.json", "w", encoding="utf-8") as f:
         json.dump([s.__dict__ for s in scenes], f, indent=2)
 
-    images = generate_scene_images(scenes, paths["images"], image_model_id=image_model, width=width, height=height)
-    voice = synthesize_voiceovers(scenes, paths["audio"], tts_model_id=tts_model, speaker_wav=speaker_wav)
-    music = None
-    if music_prompt:
-        music = synthesize_music(music_prompt, paths["music"] / "background.wav", model_id=music_model)
+    images = generate_scene_images(scenes, paths["images"], image_model_id=args.image_model, width=args.width, height=args.height)
+    scene_videos = generate_scene_videos(
+        scenes,
+        images,
+        paths["scene_videos"],
+        i2v_backend=args.i2v_backend,
+        i2v_model=args.i2v_model,
+        i2v_command=args.i2v_command,
+    )
+    voice = synthesize_voiceovers(scenes, paths["audio"], tts_model_id=args.tts_model, speaker_wav=args.speaker_wav)
 
-    return compose_video(images, voice, scenes, paths["video"] / "final.mp4", music_path=music)
+    music = None
+    if not args.no_music:
+        music = synthesize_music(args.music_prompt, paths["music"] / "background.wav", model_id=args.music_model)
+
+    return compose_video(images, voice, scenes, paths["video"] / "final.mp4", music_path=music, scene_video_paths=scene_videos)
 
 
 def parse_args() -> argparse.Namespace:
@@ -218,30 +275,37 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--scenes", type=int, default=4)
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--height", type=int, default=720)
-    parser.add_argument("--preset", choices=list(MODEL_PRESETS.keys()), default="fast-4090")
+    parser.add_argument("--preset", choices=list(MODEL_PRESETS.keys()), default="quality-4090")
+
     parser.add_argument("--script-model", type=str, default=None)
     parser.add_argument("--image-model", type=str, default=None)
     parser.add_argument("--tts-model", type=str, default=None)
     parser.add_argument("--music-model", type=str, default=None)
+
+    parser.add_argument("--i2v-backend", choices=["none", "wan22", "ltx"], default=None)
+    parser.add_argument("--i2v-model", type=str, default=None)
+    parser.add_argument("--i2v-command", type=str, default=None, help="Shell template with {input} {output} {prompt} {model} {backend}")
+
     parser.add_argument("--music-prompt", type=str, default="upbeat modern product ad music, clean electronic, no vocals")
-    parser.add_argument("--speaker-wav", type=Path, default=None, help="Optional voice clone sample for XTTS")
+    parser.add_argument("--speaker-wav", type=Path, default=None)
     parser.add_argument("--no-music", action="store_true")
     return parser.parse_args()
 
 
-def resolve_models(args: argparse.Namespace) -> dict[str, str]:
+def resolve_models(args: argparse.Namespace) -> argparse.Namespace:
     preset = MODEL_PRESETS[args.preset]
-    return {
-        "script_model": args.script_model or preset["script_model"],
-        "image_model": args.image_model or preset["image_model"],
-        "tts_model": args.tts_model or preset["tts_model"],
-        "music_model": args.music_model or preset["music_model"],
-    }
+    args.script_model = args.script_model or preset["script_model"]
+    args.image_model = args.image_model or preset["image_model"]
+    args.tts_model = args.tts_model or preset["tts_model"]
+    args.music_model = args.music_model or preset["music_model"]
+    args.i2v_backend = args.i2v_backend or preset["i2v_backend"]
+    args.i2v_model = args.i2v_model or preset["i2v_model"]
+    return args
 
 
 def check_device() -> None:
     if not torch.cuda.is_available():
-        raise RuntimeError("CUDA GPU is required for this workflow")
+        raise RuntimeError("CUDA GPU is required")
     props = torch.cuda.get_device_properties(0)
     print(f"[bold]GPU:[/bold] {props.name} | VRAM ~ {props.total_memory / (1024**3):.1f} GB")
 
@@ -249,27 +313,15 @@ def check_device() -> None:
 def main() -> None:
     args = parse_args()
     check_device()
-    models = resolve_models(args)
+    args = resolve_models(args)
 
     print(f"[cyan]Preset:[/cyan] {args.preset}")
-    print(f"[cyan]Scene+Voice pipeline models:[/cyan] {models}")
-    print(f"[cyan]Latest dedicated video model references:[/cyan] {LATEST_VIDEO_REFERENCES}")
+    print(f"[cyan]Models:[/cyan] script={args.script_model} image={args.image_model} tts={args.tts_model} music={args.music_model}")
+    print(f"[cyan]I2V:[/cyan] backend={args.i2v_backend} model={args.i2v_model}")
+    print(f"[cyan]Latest I2V refs:[/cyan] {LATEST_VIDEO_REFERENCES}")
 
-    music_prompt = None if args.no_music else args.music_prompt
-    out = build_video(
-        topic=args.topic,
-        out_root=args.out,
-        n_scenes=args.scenes,
-        width=args.width,
-        height=args.height,
-        script_model=models["script_model"],
-        image_model=models["image_model"],
-        tts_model=models["tts_model"],
-        music_model=models["music_model"],
-        music_prompt=music_prompt,
-        speaker_wav=args.speaker_wav,
-    )
-    print(f"\n[bold green]Done.[/bold green] Video saved at: {out}")
+    output = build_video(args)
+    print(f"\n[bold green]Done.[/bold green] Video saved at: {output}")
 
 
 if __name__ == "__main__":
