@@ -15,6 +15,36 @@ This update keeps everything local/open-source and adds:
 4. Optionally generates background music (MusicGen).
 5. Composes a captioned MP4.
 
+## Best setup: Windows vs WSL2 Linux
+
+Short answer: **WSL2 Ubuntu is usually the best setup for this stack** on your laptop.
+
+### Recommendation
+- **Best overall**: **Windows 11 + WSL2 (Ubuntu 22.04/24.04)**
+- **Why**:
+  - Python AI ecosystem is smoother on Linux environments (fewer package issues).
+  - Better compatibility with open-source tooling around diffusers/TTS/video pipelines.
+  - Easier shell scripting and dependency management.
+
+### When to use native Windows
+Use native Windows only if you specifically need:
+- direct integration with Windows-only apps/plugins
+- a GUI-only workflow and no terminal comfort
+
+### Practical setup checklist (recommended)
+1. Install latest NVIDIA Game Ready/Studio driver on Windows host.
+2. Install WSL2 + Ubuntu.
+3. In Ubuntu, create venv and install requirements.
+4. Install FFmpeg inside WSL2:
+   ```bash
+   sudo apt update && sudo apt install -y ffmpeg
+   ```
+5. Validate CUDA visibility from WSL2:
+   ```bash
+   nvidia-smi
+   ```
+6. Run with `--preset fast-4090` first, then upgrade to `quality-4090`.
+
 ## Default presets (for RTX 4090 laptop)
 
 ### `fast-4090` (default)
